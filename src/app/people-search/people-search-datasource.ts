@@ -1,17 +1,19 @@
 import {DataSource} from '@angular/cdk/collections';
 import {MatPaginator, MatSort, PageEvent, Sort} from '@angular/material';
-import {map} from 'rxjs/operators';
+import {map, mergeMap} from 'rxjs/operators';
 import {Observable, of as observableOf, merge, BehaviorSubject} from 'rxjs';
 import {GithubUser} from '../github/githubUser';
 import {GitHubService} from '../github/git-hub.service';
-import {switchMap} from 'rxjs/internal/operators/switchMap';
 
 export class PeopleSearchDataSource extends DataSource<GithubUser> {
   private searchSubj = new BehaviorSubject<string>('');
   private currentServerData: GithubUser[] = [];
   private currentServerPage = 0;
 
-  constructor(private paginator: MatPaginator, private sort: MatSort, private gitHubService: GitHubService) {
+  constructor(private paginator: MatPaginator,
+              // Disabled as was not part of MVP goals
+              // private sort: MatSort,
+              private gitHubService: GitHubService) {
     super();
   }
 
@@ -24,21 +26,18 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
     // Set the paginator's initial length to 0, as we don't want default values
     this.paginator.length = 0;
 
-    // This ensures that whenever we expect to update the UI with new data (not necessarily re-fetch data)
-    return merge(
+    const subscribableItems = merge(
       this.searchSubj,
       this.paginator.page,
-      this.sort.sortChange
-    ).pipe(switchMap(eventVal => {
+      // this.sort.sortChange
+    );
+
+    // This ensures that whenever we expect to update the UI with new data (not necessarily re-fetch data)
+    return subscribableItems.pipe(mergeMap(eventVal => {
       // This should always be true with our config but is added for expandability
       const canHybridPage = (100 % this.paginator.pageSize) === 0;
       // Method to be used to return the valid dataset
-      const returnSlicedData = () => {
-        const leftOver = (this.paginator.pageSize * this.paginator.pageIndex) % 100;
-        return this.currentServerData.slice(leftOver, leftOver + this.paginator.pageSize);
-      };
-
-      const getSafeReturnArr = () => canHybridPage ? returnSlicedData() : this.currentServerData;
+      const getSafeReturnArr = () => canHybridPage ? this.returnSlicedData() : this.currentServerData;
 
       // When searchSubj changed, we need to reset to start and regrab data
       // TODO: Break this out into it's own function - the logic is getting hard to track and it's time to break it out into a method
@@ -50,7 +49,7 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
         return this.gitHubService.searchUsers(this.searchSubj.value, 0, {
           // If it can handle hybrid page, it will be `false` which is removed from server call by object helper function
           per_page: (!canHybridPage) && this.paginator.pageSize,
-          order: this.sort.direction
+          // order: this.sort.direction
         })
           .pipe(map(({total_count, items}) => {
             this.paginator.length = total_count;
@@ -71,7 +70,7 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
         if (!canHybridPage) {
           return this.gitHubService.searchUsers(this.searchSubj.value, eventVal.pageIndex, {
             per_page: this.paginator.pageSize,
-            order: this.sort.direction
+            // order: this.sort.direction
           }).pipe(map(({total_count, items}) => {
             this.paginator.length = total_count;
             this.currentServerData = items;
@@ -87,27 +86,26 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
         // Make sure the serverItemRange doesn't go out-of-bounds above or below
         if ((serverItemRange > numberOfItemsViewedClient) && ((serverItemRange - (numberOfItemsViewedClient)) < 100)) {
           // return slice as we have the data already grabbed
-          return observableOf(returnSlicedData());
+          return observableOf(this.returnSlicedData());
         }
 
         // fetch new page as we didn't have the data
         // We could probably currServPage++, but that would be assuming the state we're moving in and breaks going backward/etc
         this.currentServerPage = Math.floor(numberOfItemsViewedClient / 100);
         return this.gitHubService.searchUsers(this.searchSubj.value, this.currentServerPage, {
-          order: this.sort.direction
+          // order: this.sort.direction
         }).pipe(map(({total_count, items}) => {
           this.paginator.length = total_count;
           this.currentServerData = items;
-          return returnSlicedData();
+          return this.returnSlicedData();
         }));
       }
 
-
-      // Sort was changed - use function to preserve type data
-      const isEventSort = (eventInfo: any): eventInfo is Sort => !!(eventInfo as Sort).direction;
-      if (isEventSort(eventVal)) {
-
-      }
+      /**
+       // Sort was changed - use function to preserve type data
+       const isEventSort = (eventInfo: any): eventInfo is Sort => !!(eventInfo as Sort).direction;
+       if (isEventSort(eventVal)) {}
+       */
 
       // Otherwise safe return in case of edgecase
       return observableOf(getSafeReturnArr());
@@ -126,5 +124,13 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
 
     }
     this.searchSubj.next(val);
+  }
+
+  /**
+   * Function used to consistently return valid data that's cached by a larger server call than paginator size
+   */
+  private returnSlicedData() {
+    const leftOver = (this.paginator.pageSize * this.paginator.pageIndex) % 100;
+    return this.currentServerData.slice(leftOver, leftOver + this.paginator.pageSize);
   }
 }

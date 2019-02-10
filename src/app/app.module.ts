@@ -10,12 +10,14 @@ import {AppComponent} from './app.component';
 
 import {PeopleSearchComponent} from './people-search/people-search.component';
 import {AppNavComponent} from './app-nav/app-nav.component';
+import {SafePipe} from './shared/safe.pipe';
 
 @NgModule({
   declarations: [
     AppComponent,
     PeopleSearchComponent,
-    AppNavComponent
+    AppNavComponent,
+    SafePipe
   ],
   imports: [
     BrowserModule,
