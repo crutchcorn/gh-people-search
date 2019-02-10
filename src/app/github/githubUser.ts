@@ -5,6 +5,7 @@ export interface GithubUser {
   name: string;
   bio: string;
   cursor: string;
+  url: string;
   avatarUrl: string;
   followers: number;
   following: number;

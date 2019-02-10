@@ -1,15 +1,20 @@
-import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {NgModule} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import {
   MatButtonModule,
-  MatIconModule, MatListModule,
+  MatIconModule,
+  MatListModule,
+  MatMenuModule,
   MatPaginatorModule,
+  MatProgressSpinnerModule,
   MatSidenavModule,
   MatSortModule,
   MatTableModule,
-  MatToolbarModule
+  MatToolbarModule,
+  MatTooltipModule
 } from '@angular/material';
 import {LayoutModule} from '@angular/cdk/layout';
+import {FlexLayoutModule} from '@angular/flex-layout';
 
 @NgModule({
   declarations: [],
@@ -23,7 +28,11 @@ import {LayoutModule} from '@angular/cdk/layout';
     MatSidenavModule,
     MatButtonModule,
     MatIconModule,
-    MatListModule
+    MatListModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    FlexLayoutModule,
+    MatMenuModule
   ],
   exports: [
     CommonModule,
@@ -35,7 +44,12 @@ import {LayoutModule} from '@angular/cdk/layout';
     MatButtonModule,
     MatSidenavModule,
     MatIconModule,
-    MatListModule
+    MatListModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    FlexLayoutModule,
+    MatMenuModule
   ]
 })
-export class CustomMaterialModule { }
+export class CustomMaterialModule {
+}

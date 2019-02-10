@@ -12,6 +12,7 @@ import gql from 'graphql-tag';
 })
 export class GitHubService {
   loggedIn: boolean = false;
+
   constructor(private apollo: Apollo) {
   }
 
@@ -35,9 +36,9 @@ export class GitHubService {
           const {userCount: total, edges} = search;
           const users: GithubUser[] = edges.map(edge => {
             const usrData = ObjectMap(edge.node, (val) => {
-              const isTot = (v): v is {totalCount: number} => v && v.totalCount;
+              const isTot = (v): v is { totalCount: number } => v && v.totalCount !== undefined;
               if (isTot(val)) {
-                const isOrg = (v): v is SearchOrganizationType => Object.keys(v).length > 1;
+                const isOrg = (v): v is SearchOrganizationType => Object.keys(v).filter(k => !k.startsWith('__')).length > 1;
                 if (isOrg(val)) {
                   return {
                     total: val.totalCount,

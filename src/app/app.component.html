@@ -1,4 +1,31 @@
 <app-nav>
-  <app-search-input (searchEmit)="search.dataSource.setSearch($event)"></app-search-input>
-  <app-people-search #search></app-people-search>
+  <ng-container *ngIf="allowed; else loading">
+    <!--TODO: Move search into datatable-->
+    <app-search-input (searchEmit)="search.dataSource.setSearch($event)"></app-search-input>
+    <app-people-search #search></app-people-search>
+  </ng-container>
+  <ng-template #loading>
+    <h1>Hi there, friends!</h1>
+
+    <p>I know this is an unfortunate start, but it seems that the GH Graph API requires the user to be logged in.
+
+      The only way that I am able to do so without a callback URL (which is harder to deploy quickly and also adds
+      potential
+      harm if I were a malicious party of your data (which I'm not, but even still, better to give the user control!) is
+      by using a
+      personal access token. You can generate one yourself as described here:
+      <a href="https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/">https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/</a>.
+      Feel free to deny all permissions except the read:org one. (There's some neato stuff I'm trying to do by
+      displaying the search user's orgs
+      and for some reason GH requires I access yours for this purpose? Very strange, if this causes problems/concerns
+      let me know and I can remove it fairly easily)</p>
+    <input #inpt
+           [(ngModel)]="accessToken"
+           type="password">
+    <button (click)="inpt.type = inpt.type === 'password' ? 'text' : 'password'"
+            mat-button>
+      <mat-icon>{{inpt.type === 'password' ? 'remove_red_eye' : 'lock'}}</mat-icon>
+    </button>
+    <button (click)="saveToken()">Save Access Token to localStorage</button>
+  </ng-template>
 </app-nav>

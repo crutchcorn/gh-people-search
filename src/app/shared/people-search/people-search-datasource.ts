@@ -1,14 +1,15 @@
 import {DataSource} from '@angular/cdk/collections';
 import {MatPaginator, PageEvent} from '@angular/material';
-import {map, mergeMap, pairwise, takeLast} from 'rxjs/operators';
-import {Observable, of as observableOf, merge, BehaviorSubject, ReplaySubject} from 'rxjs';
+import {map, mergeMap} from 'rxjs/operators';
+import {BehaviorSubject, merge, Observable, of as observableOf} from 'rxjs';
 import {GithubUser} from '../../github/githubUser';
 import {GitHubService} from '../../github/git-hub.service';
 
 export class PeopleSearchDataSource extends DataSource<GithubUser> {
+  public loading = false;
   private searchSubj = new BehaviorSubject('');
-  private data: GithubUser[] = [];
   // We are restricting end page/start page until I can figure out more about how I'd do end page - seems like PageInfo lacks this ability
+  private data: GithubUser[] = [];
   // TODO: Move to use pairWise
   private previousPage = 0;
   private previousSearch = null;
@@ -24,7 +25,8 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
    * @returns A stream of the items to be rendered.
    */
   connect(): Observable<GithubUser[]> {
-    this.gitHubService.login().then(()=>{});
+    this.gitHubService.login().then(() => {
+    });
 
     // Set the paginator's initial length to 0, as we don't want default values
     this.paginator.length = 0;
@@ -36,6 +38,7 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
 
     // This ensures that whenever we expect to update the UI with new data (not necessarily re-fetch data)
     return subscribableItems.pipe(mergeMap(eventVal => {
+      this.loading = true;
       // Clear data if empty string - placing here as it should be handled no matter what the user does
       if (this.searchSubj.value === '') {
         this.paginator.length = 0;
@@ -44,6 +47,7 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
         if (this.previousPage !== 0) {
           this.paginator.firstPage();
         }
+        this.loading = false;
         return observableOf([]);
       }
 
@@ -64,12 +68,13 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
             this.previousPage = 0;
             this.data = users;
             this.previousSearch = eventVal;
+            this.loading = false;
             return this.data;
           }));
       }
 
       // Page was changed in some way - use function to preserve type data
-      const isEventPageEvent = (eventInfo: any): eventInfo is PageEvent => eventInfo && !!(eventInfo as PageEvent).pageIndex;
+      const isEventPageEvent = (eventInfo: any): eventInfo is PageEvent => eventInfo && (eventInfo as PageEvent).pageIndex !== undefined;
       if (isEventPageEvent(eventVal)) {
         // If page has not moved, they're just adjusting the amount to grad and we should give them starting at the same index (cursor)
         const cursor = eventVal.pageIndex <= this.previousPage ? this.data[0].cursor : this.data[this.data.length - 1].cursor;
@@ -84,11 +89,13 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
           this.previousPage = eventVal.pageIndex;
           this.paginator.length = total;
           this.data = users;
+          this.loading = false;
           return users;
         }));
       }
 
       // Otherwise safe return in case of edgecase
+      this.loading = false;
       return observableOf(this.data);
     }));
   }
@@ -101,7 +108,6 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
   }
 
   setSearch(val) {
-    console.log('searching for', val);
     this.searchSubj.next(val);
   }
 }

@@ -1,36 +1,175 @@
-<!--TODO: use trackBy, change to CDK, improve styling-->
+<!--TODO: Add clear button to search -->
 
-<table mat-table [dataSource]="dataSource" aria-label="GitHub Users" class="full-width">
+<table [dataSource]="dataSource"
+       aria-label="GitHub Users"
+       class="full-width"
+       mat-table
+       multiTemplateDataRows>
+
   <ng-container matColumnDef="name">
-    <th mat-header-cell *matHeaderCellDef>Name</th>
-    <td mat-cell *matCellDef="let row">
-      <img [src]="row.avatarUrl | safe:'url'"
-           [alt]="row.name + '\'s profile picture'" width="100px" height="100px"/>
-      {{row.name}}
+    <th *matHeaderCellDef
+        mat-header-cell>Name
+    </th>
+    <td *matCellDef="let row"
+        [attr.rowspan]="2"
+        class="width-1px"
+        mat-cell>
+      <div
+        fxLayout="column"
+        fxLayoutAlign="center center">
+        <img [alt]="row.name + '\'s profile picture'"
+             [src]="row.avatarUrl | safe:'url'"
+             class="user-profile-pic"
+             height="100px"
+             width="100px"/>
+        <h3 class="text-center">{{row.name}}</h3>
+      </div>
     </td>
   </ng-container>
 
   <ng-container matColumnDef="username">
-    <th mat-header-cell *matHeaderCellDef>Username</th>
-    <td mat-cell *matCellDef="let row">
+    <th *matHeaderCellDef
+        mat-header-cell>Username
+    </th>
+    <td *matCellDef="let row"
+        mat-cell>
       {{row.login}}
     </td>
   </ng-container>
 
-  <ng-container matColumnDef="description">
-    <th mat-header-cell *matHeaderCellDef>Bio</th>
-    <td mat-cell *matCellDef="let row">
-      {{row.bio}}
+
+  <ng-container matColumnDef="followers">
+    <th *matHeaderCellDef
+        mat-header-cell></th>
+    <td *matCellDef="let row"
+        class="width-1px"
+        mat-cell>
+      <div aria-label="Number of Followers"
+           class="icon-div"
+           fxLayout="row"
+           fxLayoutAlign="start center"
+           matTooltip="Number of Followers">
+        <h5 class="text-center">{{row.followers}}</h5>
+        <mat-icon>supervisor_account</mat-icon>
+      </div>
     </td>
   </ng-container>
 
 
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  <ng-container matColumnDef="following">
+    <th *matHeaderCellDef
+        mat-header-cell></th>
+    <td *matCellDef="let row"
+        class="width-1px"
+        mat-cell>
+      <div aria-label="Number of Accounts the User is Following"
+           class="icon-div"
+           fxLayout="row"
+           fxLayoutAlign="start center"
+           matTooltip="Number of Accounts the User is Following">
+        <h5 class="text-center">{{row.following}}</h5>
+        <mat-icon>person_add</mat-icon>
+      </div>
+    </td>
+  </ng-container>
+
+
+  <ng-container matColumnDef="starredRepositories">
+    <th *matHeaderCellDef
+        mat-header-cell></th>
+    <td *matCellDef="let row"
+        class="width-1px"
+        mat-cell>
+      <div aria-label="Number of Starred Repositories"
+           class="icon-div"
+           fxLayout="row"
+           fxLayoutAlign="start center"
+           matTooltip="Number of Starred Repositories">
+        <h5 class="text-center">{{row.starredRepositories}}</h5>
+        <mat-icon>star</mat-icon>
+      </div>
+    </td>
+  </ng-container>
+
+
+  <ng-container matColumnDef="issues">
+    <th *matHeaderCellDef
+        mat-header-cell></th>
+    <td *matCellDef="let row"
+        class="width-1px"
+        mat-cell>
+      <div aria-label="Number of Issues"
+           class="icon-div"
+           fxLayout="row"
+           fxLayoutAlign="start center"
+           matTooltip="Number of Issues">
+        <h5 class="text-center">{{row.issues}}</h5>
+        <mat-icon>error</mat-icon>
+      </div>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="description">
+    <td *matCellDef="let row"
+        [attr.colspan]="displayedColumns.length - 2"
+        class="desc-td"
+        mat-cell>
+      <p>{{row.bio}}</p>
+    </td>
+  </ng-container>
+
+
+  <ng-container matColumnDef="organizations">
+    <th *matHeaderCellDef
+        mat-header-cell></th>
+    <td *matCellDef="let row"
+        [attr.rowspan]="2"
+        class="width-1px"
+        mat-cell>
+      <div>
+      <div fxLayout="row wrap" style="width: 100px">
+        <a (click)="stopPropegation($event)"
+           *ngFor="let org of row?.organizations?.data"
+           [href]="org.websiteUrl"
+           fxFlex="0 0 calc(50% - 4px)"
+           fxLayout="row"
+           fxLayoutAlign="center center"
+           style="margin: 2px">
+          <img [alt]="'Avatar for ' + org.name"
+               [matTooltip]="org.name"
+               [src]="org?.avatarUrl | safe:'url'"
+               height="40px"
+               width="40px">
+        </a>
+        <div
+          *ngIf="row?.organizations?.total > 3"
+          [matTooltip]="'User has ' + (row?.organizations?.total - 3) + 'more organizations they belong to!'"
+          class="placeholder-org center-justify"
+          fxFlex="0 0 auto"
+          fxLayout="row"
+          fxLayoutAlign="start center">
+          <h3>{{row?.organizations?.total - 3}}</h3>
+        </div>
+      </div>
+      </div>
+    </td>
+  </ng-container>
+
+  <tr *matHeaderRowDef="displayedColumns"
+      mat-header-row></tr>
+  <tr (click)="navigateTo(row)"
+      *matRowDef="let row; columns: displayedColumns;"
+      mat-row></tr>
+  <tr (click)="navigateTo(row)"
+      *matRowDef="let row; columns: ['description']"
+      mat-row></tr>
 </table>
 
 <mat-paginator #paginator
                [pageIndex]="0"
-               [pageSize]="50"
-               [pageSizeOptions]="[25, 50, 100]">
+               [pageSizeOptions]="[10, 25, 50]"
+               [pageSize]="25">
 </mat-paginator>
+
+<mat-spinner *ngIf="dataSource.loading"
+             style="height: 70vh; width: 70vh"></mat-spinner>

@@ -1,8 +1,8 @@
 import {NgModule} from '@angular/core';
-import {ApolloModule, APOLLO_OPTIONS, Apollo} from 'apollo-angular';
-import {HttpLinkModule, HttpLink} from 'apollo-angular-link-http';
+import {Apollo, ApolloModule} from 'apollo-angular';
+import {HttpLink, HttpLinkModule} from 'apollo-angular-link-http';
 import {InMemoryCache} from 'apollo-cache-inmemory';
-import { setContext } from 'apollo-link-context';
+import {setContext} from 'apollo-link-context';
 import {HttpClientModule} from '@angular/common/http';
 
 @NgModule({
@@ -16,9 +16,9 @@ export class GitHubGraphQLModule {
   constructor(apollo: Apollo, httpLink: HttpLink) {
     const uri = 'https://api.github.com/graphql';
 
-    const http = httpLink.create({ uri });
+    const http = httpLink.create({uri});
 
-    const auth = setContext((_, { headers }) => {
+    const auth = setContext((_, {headers}) => {
       // get the authentication token from local storage if it exists
       const token = localStorage.getItem('token');
       // return the headers to the context so httpLink can read them

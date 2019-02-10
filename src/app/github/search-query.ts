@@ -16,6 +16,7 @@ export interface SearchQueryType {
       cursor: string,
       node: {
         login: string,
+        url: string, // Profile URL on GH
         name: string,
         bio: string,
         avatarUrl: string,
@@ -53,8 +54,9 @@ export function getSearchQuery(query: string, limit: number = 100, cursor?: stri
       cursor
       node {
         ... on User {
-        login
+          login
           name
+          url
           bio
           avatarUrl
           followers {

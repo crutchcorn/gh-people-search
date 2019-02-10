@@ -23,22 +23,23 @@ export class SearchInputComponent implements OnInit {
       // Make sure that the timer will fire on initial load
       observableOf(''),
       this.submitSubj.pipe(
-      tap(() => {
-        this.searchEmit.emit(this.searchControl.value);
-      }))
+        tap(() => {
+          this.searchEmit.emit(this.searchControl.value);
+        }))
     )
       .pipe(
-      switchMap(() =>
-        // Submit after user has stopped typing in input for 1.5 seconds
-        this.searchControl.valueChanges
-          .pipe(
-            switchMap(() =>
-              // Once timer is up, fire the submitSubject which will reset the value listener and fire the event
-              timer(1500).pipe(tap(() => {
-                this.submitSubj.next();
-              }))
+        switchMap(() =>
+          // Submit after user has stopped typing in input for 1.5 seconds
+          this.searchControl.valueChanges
+            .pipe(
+              switchMap(() =>
+                // Once timer is up, fire the submitSubject which will reset the value listener and fire the event
+                timer(1500).pipe(tap(() => {
+                  this.submitSubj.next();
+                }))
+              )
             )
-          )
-      )).subscribe(() => {});
+        )).subscribe(() => {
+    });
   }
 }
