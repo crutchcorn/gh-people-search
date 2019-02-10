@@ -1,0 +1,81 @@
+import gql from 'graphql-tag';
+
+export interface SearchOrganizationType {
+  totalCount: number;
+  nodes: Array<{
+    avatarUrl: string,
+    websiteUrl: string,
+    name: string
+  }>;
+}
+
+export interface SearchQueryType {
+  search: {
+    userCount: number,
+    edges: Array<{
+      cursor: string,
+      node: {
+        login: string,
+        name: string,
+        bio: string,
+        avatarUrl: string,
+        followers: {
+          totalCount: number
+        },
+        following: {
+          totalCount: number
+        },
+        starredRepositories: {
+          totalCount: number
+        },
+        issues: {
+          totalCount: number
+        },
+        organizations: SearchOrganizationType,
+      }
+    }>,
+  };
+}
+
+export function getSearchQuery(query: string, limit: number = 100, cursor?: string, dir = 'next') {
+  return gql`
+      {
+  search(query: "${query}", type: USER, first: ${limit}${cursor ? `, ${dir === 'next' ? 'after' : 'before'}: ${cursor}` : ''}) {
+    edges {
+      cursor
+      node {
+        ... on User {
+        login
+          name
+          bio
+          avatarUrl
+          followers {
+            totalCount
+          }
+           following {
+              totalCount
+            }
+          starredRepositories {
+            totalCount
+          }
+          issues {
+            totalCount
+          }
+          organizations(first: 3) {
+            totalCount
+            nodes {
+              ...on Organization {
+                avatarUrl
+                websiteUrl
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+    userCount
+  }
+}
+`;
+}

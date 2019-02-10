@@ -1,40 +1,56 @@
 import {Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {ObjectMap, RemoveSparseObjectKeys} from '../shared/object-helpers';
+import {ObjectMap} from '../shared/object-helpers';
 import {GithubUser} from './githubUser';
-
-export interface IGitHubPagination {
-  page: number;
-  per_page: number;
-}
-
-type GitHubOrderType = 'asc' | 'desc';
-type GitHubSortType = 'followers' | 'repositories' | 'joined'; // Default is based on `score` but is not based by val I don't think
+import {Apollo} from 'apollo-angular';
+import {map, take} from 'rxjs/operators';
+import {getSearchQuery, SearchOrganizationType, SearchQueryType} from './search-query';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GitHubService {
-  constructor(private http: HttpClient) {
+  constructor(private apollo: Apollo) {
   }
 
-  searchUsers<T = {
-    total_count: number,
-    incomplete_results: boolean,
-    items: GithubUser[]
-  }>(query: string, page: number = 0, options: {
-    per_page?: number,
-    sort?: GitHubSortType,
-    order?: GitHubOrderType | ''
-  } = {}): Observable<T> {
-    const partialParams = ObjectMap(RemoveSparseObjectKeys({page, per_page: 100, order: 'asc', ...options}), (val) => `${val}`);
-    const queryParam = query.replace(/\s/g, '+');
-    return this.http.get<T>(`https://api.github.com/search/users`, {
-      params: {
-        q: queryParam,
-        ...partialParams
-      }
-    });
+  searchUsers(...args: Parameters<typeof getSearchQuery>): Observable<{
+    total: number,
+    users: GithubUser[]
+  }> {
+    return this.apollo.watchQuery<SearchQueryType>({
+      query: getSearchQuery(...args)
+    }).valueChanges
+      .pipe(
+        take(1),
+        map(({data}) => {
+          const {search} = data;
+          const {userCount: total, edges} = search;
+          const users: GithubUser[] = edges.map(edge => {
+            const usrData = ObjectMap(edge.node, (val) => {
+              const isTot = (v): v is {totalCount: number} => v.totalCount;
+              if (isTot(val)) {
+                const isOrg = (v): v is SearchOrganizationType => Object.keys(v).length > 1;
+                if (isOrg(val)) {
+                  return {
+                    total: val.totalCount,
+                    data: val.nodes
+                  };
+                }
+                return val.totalCount;
+              }
+              return val;
+            });
+
+            return {
+              cursor: edge.cursor,
+              ...usrData
+            };
+          });
+          return {
+            total,
+            users
+          };
+        })
+      );
   }
 }

@@ -1,5 +1,5 @@
 import {DataSource} from '@angular/cdk/collections';
-import {MatPaginator, MatSort, PageEvent, Sort} from '@angular/material';
+import {MatPaginator, PageEvent} from '@angular/material';
 import {map, mergeMap} from 'rxjs/operators';
 import {Observable, of as observableOf, merge, BehaviorSubject} from 'rxjs';
 import {GithubUser} from '../github/githubUser';
@@ -7,12 +7,11 @@ import {GitHubService} from '../github/git-hub.service';
 
 export class PeopleSearchDataSource extends DataSource<GithubUser> {
   private searchSubj = new BehaviorSubject<string>('');
-  private currentServerData: GithubUser[] = [];
-  private currentServerPage = 0;
+  private data: GithubUser[] = [];
+  // We are restricting end page/start page until I can figure out more about how I'd do end page - seems like PageInfo lacks this ability
+  private previousPage = 0;
 
   constructor(private paginator: MatPaginator,
-              // Disabled as was not part of MVP goals
-              // private sort: MatSort,
               private gitHubService: GitHubService) {
     super();
   }
@@ -28,87 +27,50 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
 
     const subscribableItems = merge(
       this.searchSubj,
-      this.paginator.page,
-      // this.sort.sortChange
+      this.paginator.page
     );
 
     // This ensures that whenever we expect to update the UI with new data (not necessarily re-fetch data)
     return subscribableItems.pipe(mergeMap(eventVal => {
-      // This should always be true with our config but is added for expandability
-      const canHybridPage = (100 % this.paginator.pageSize) === 0;
-      // Method to be used to return the valid dataset
-      const getSafeReturnArr = () => canHybridPage ? this.returnSlicedData() : this.currentServerData;
 
       // When searchSubj changed, we need to reset to start and regrab data
-      // TODO: Break this out into it's own function - the logic is getting hard to track and it's time to break it out into a method
       if (typeof eventVal === 'string') {
         // Early return if data has not changed
         if (eventVal === this.searchSubj.value) {
-          return observableOf(getSafeReturnArr());
+          return observableOf(this.data);
         }
-        return this.gitHubService.searchUsers(this.searchSubj.value, 0, {
-          // If it can handle hybrid page, it will be `false` which is removed from server call by object helper function
-          per_page: (!canHybridPage) && this.paginator.pageSize,
-          // order: this.sort.direction
-        })
-          .pipe(map(({total_count, items}) => {
-            this.paginator.length = total_count;
+        return this.gitHubService.searchUsers(this.searchSubj.value, this.paginator.pageSize)
+          .pipe(map(({total, users}) => {
+            this.paginator.length = total;
             this.paginator.firstPage();
-            this.currentServerData = items;
-            this.currentServerPage = 0;
-            // Return only the actual amount of items we need to. We're going to be fetching more from the server to limit the number of
-            // We can only do this if `(100 % this.paginator.pageSize) === 0` otherwise things don't work out
-            // API calls (GH's v3 API limits pretty heavily so this should help a bit with that)
-            return canHybridPage ? items.slice(0, this.paginator.pageSize) : items;
+            this.previousPage = 0;
+            this.data = users;
+            return this.data;
           }));
       }
 
       // Page was changed in some way - use function to preserve type data
-      // TODO: Break this out into it's own function - the logic is getting hard to track and it's time to break it out into a method
       const isEventPageEvent = (eventInfo: any): eventInfo is PageEvent => !!(eventInfo as PageEvent).pageIndex;
       if (isEventPageEvent(eventVal)) {
-        if (!canHybridPage) {
-          return this.gitHubService.searchUsers(this.searchSubj.value, eventVal.pageIndex, {
-            per_page: this.paginator.pageSize,
-            // order: this.sort.direction
-          }).pipe(map(({total_count, items}) => {
-            this.paginator.length = total_count;
-            this.currentServerData = items;
-            this.currentServerPage = eventVal.pageIndex;
-            return items;
-          }));
-        }
-        // This includes the current page of data
-        const numberOfItemsViewedClient = eventVal.pageSize * (eventVal.pageIndex + 1);
-        // Might be able to do some clever math (by using modulo and comparison) to remove the current server page requirement
-        // But we'd need to be able to compare the pageIndex against the previous one to check that a user hasn't switched pages/etc
-        const serverItemRange = this.currentServerPage * 100;
-        // Make sure the serverItemRange doesn't go out-of-bounds above or below
-        if ((serverItemRange > numberOfItemsViewedClient) && ((serverItemRange - (numberOfItemsViewedClient)) < 100)) {
-          // return slice as we have the data already grabbed
-          return observableOf(this.returnSlicedData());
-        }
-
-        // fetch new page as we didn't have the data
-        // We could probably currServPage++, but that would be assuming the state we're moving in and breaks going backward/etc
-        this.currentServerPage = Math.floor(numberOfItemsViewedClient / 100);
-        return this.gitHubService.searchUsers(this.searchSubj.value, this.currentServerPage, {
-          // order: this.sort.direction
-        }).pipe(map(({total_count, items}) => {
-          this.paginator.length = total_count;
-          this.currentServerData = items;
-          return this.returnSlicedData();
+        // If page has not moved, they're just adjusting the amount to grad and we should give them starting at the same index (cursor)
+        const cursor = eventVal.pageIndex <= this.previousPage ? this.data[0].cursor : this.data[this.data.length - 1].cursor;
+        // If page has been changed to a previous one, we need to go backward. Otherwise, in any other instance we can move forward
+        const dir = eventVal.pageIndex < this.previousPage ? 'prev' : 'next';
+        return this.gitHubService.searchUsers(
+          this.searchSubj.value,
+          this.paginator.pageSize,
+          cursor,
+          dir
+        ).pipe(map(({total, users}) => {
+          this.previousPage = eventVal.pageIndex;
+          this.paginator.length = total;
+          this.data = users;
+          return users;
         }));
       }
 
-      /**
-       // Sort was changed - use function to preserve type data
-       const isEventSort = (eventInfo: any): eventInfo is Sort => !!(eventInfo as Sort).direction;
-       if (isEventSort(eventVal)) {}
-       */
-
       // Otherwise safe return in case of edgecase
-      return observableOf(getSafeReturnArr());
+      return observableOf(this.data);
     }));
   }
 
@@ -124,13 +86,5 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
 
     }
     this.searchSubj.next(val);
-  }
-
-  /**
-   * Function used to consistently return valid data that's cached by a larger server call than paginator size
-   */
-  private returnSlicedData() {
-    const leftOver = (this.paginator.pageSize * this.paginator.pageIndex) % 100;
-    return this.currentServerData.slice(leftOver, leftOver + this.paginator.pageSize);
   }
 }
