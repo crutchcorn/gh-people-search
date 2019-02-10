@@ -37,6 +37,14 @@ export interface SearchQueryType {
   };
 }
 
+/**
+ * TODO: Use TS types to generate GraphQL Query
+ * @see {@link https://graphql-code-generator.com/docs/plugins/typescript-apollo-angular}
+ * @param query - Query to pass to GH v4 API
+ * @param limit - How many items you want returned
+ * @param cursor - The cursor you want to start from
+ * @param dir - The direction you want to go. Next will give you the current page, anything else will give you the previous
+ */
 export function getSearchQuery(query: string, limit: number = 100, cursor?: string, dir = 'next') {
   return gql`
       {

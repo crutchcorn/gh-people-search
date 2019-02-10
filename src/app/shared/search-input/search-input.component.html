@@ -1,6 +1,6 @@
 <form (submit)="submitSubj.next()">
   <label for="search">Search</label>
-  <input type="search" id="search" name="search" [formControl]="searchControl" (focusout)="submitSubj.next()">
+  <input type="search" id="search" name="search" [formControl]="searchControl">
   <button mat-icon-button type="submit">
     <mat-icon>search</mat-icon>
   </button>

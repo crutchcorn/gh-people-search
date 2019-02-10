@@ -1,6 +1,5 @@
 import {BrowserModule} from '@angular/platform-browser';
 import {NgModule} from '@angular/core';
-import {HttpClientModule} from '@angular/common/http';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 
 import {CustomMaterialModule} from './custom-material.module';
@@ -27,7 +26,6 @@ import { ReactiveFormsModule } from '@angular/forms';
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
-    HttpClientModule,
     CustomMaterialModule,
     GitHubGraphQLModule,
     FormsModule,
