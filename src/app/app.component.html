@@ -1,3 +1,4 @@
 <app-nav>
-  <app-people-search></app-people-search>
+  <app-search-input (searchEmit)="search.dataSource.setSearch($event)"></app-search-input>
+  <app-people-search #search></app-people-search>
 </app-nav>

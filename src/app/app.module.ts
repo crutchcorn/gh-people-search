@@ -8,24 +8,30 @@ import {GitHubService} from './github/git-hub.service';
 
 import {AppComponent} from './app.component';
 
-import {PeopleSearchComponent} from './people-search/people-search.component';
+import {PeopleSearchComponent} from './shared/people-search/people-search.component';
 import {AppNavComponent} from './app-nav/app-nav.component';
 import {SafePipe} from './shared/safe.pipe';
 import { GitHubGraphQLModule } from './github/git-hub-graph-q-l.module';
+import {SearchInputComponent} from './shared/search-input/search-input.component';
+import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
     AppComponent,
     PeopleSearchComponent,
     AppNavComponent,
-    SafePipe
+    SafePipe,
+    SearchInputComponent
   ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     HttpClientModule,
     CustomMaterialModule,
-    GitHubGraphQLModule
+    GitHubGraphQLModule,
+    FormsModule,
+    ReactiveFormsModule
   ],
   providers: [GitHubService],
   bootstrap: [AppComponent]

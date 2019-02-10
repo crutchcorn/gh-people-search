@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatPaginator } from '@angular/material';
 import { PeopleSearchDataSource } from './people-search-datasource';
-import {GitHubService} from '../github/git-hub.service';
+import {GitHubService} from '../../github/git-hub.service';
 
 @Component({
   selector: 'app-people-search',
@@ -10,10 +10,10 @@ import {GitHubService} from '../github/git-hub.service';
 })
 export class PeopleSearchComponent implements OnInit {
   @ViewChild(MatPaginator) paginator: MatPaginator;
-  dataSource: PeopleSearchDataSource;
+  public dataSource: PeopleSearchDataSource;
 
   /** Columns displayed in the table. Columns IDs can be added, removed, or reordered. */
-  displayedColumns = ['id', 'name'];
+  displayedColumns = ['username', 'description', 'name'];
 
   constructor(private gitHubService: GitHubService) {}
 

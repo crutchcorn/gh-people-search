@@ -2,8 +2,8 @@ import {DataSource} from '@angular/cdk/collections';
 import {MatPaginator, PageEvent} from '@angular/material';
 import {map, mergeMap} from 'rxjs/operators';
 import {Observable, of as observableOf, merge, BehaviorSubject} from 'rxjs';
-import {GithubUser} from '../github/githubUser';
-import {GitHubService} from '../github/git-hub.service';
+import {GithubUser} from '../../github/githubUser';
+import {GitHubService} from '../../github/git-hub.service';
 
 export class PeopleSearchDataSource extends DataSource<GithubUser> {
   private searchSubj = new BehaviorSubject<string>('');
@@ -32,6 +32,16 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
 
     // This ensures that whenever we expect to update the UI with new data (not necessarily re-fetch data)
     return subscribableItems.pipe(mergeMap(eventVal => {
+      // Clear data if empty string - placing here as it should be handled no matter what the user does
+      if (this.searchSubj.value === '') {
+        this.paginator.length = 0;
+        this.previousPage = 0;
+        this.data = [];
+        if (this.previousPage !== 0) {
+          this.paginator.firstPage();
+        }
+        return observableOf([]);
+      }
 
       // When searchSubj changed, we need to reset to start and regrab data
       if (typeof eventVal === 'string') {
@@ -42,7 +52,11 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
         return this.gitHubService.searchUsers(this.searchSubj.value, this.paginator.pageSize)
           .pipe(map(({total, users}) => {
             this.paginator.length = total;
-            this.paginator.firstPage();
+            if (this.previousPage !== 0) {
+              // HACK: I suspect this will still have problems, I should be saving the entire page event
+              // and checking all props, not just prev index, to bail if nothing else
+              this.paginator.firstPage();
+            }
             this.previousPage = 0;
             this.data = users;
             return this.data;
@@ -82,9 +96,6 @@ export class PeopleSearchDataSource extends DataSource<GithubUser> {
   }
 
   setSearch(val) {
-    if (!val) {
-
-    }
     this.searchSubj.next(val);
   }
 }

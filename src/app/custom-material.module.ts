@@ -20,8 +20,8 @@ import {LayoutModule} from '@angular/cdk/layout';
     MatSortModule,
     LayoutModule,
     MatToolbarModule,
-    MatButtonModule,
     MatSidenavModule,
+    MatButtonModule,
     MatIconModule,
     MatListModule
   ],

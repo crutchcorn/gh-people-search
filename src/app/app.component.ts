@@ -7,4 +7,8 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'GitHubPeopleSearchTestr';
+
+  onSearch(val) {
+    console.log(val);
+  }
 }

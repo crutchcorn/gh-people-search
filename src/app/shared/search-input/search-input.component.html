@@ -1,0 +1,7 @@
+<form (submit)="submitSubj.next()">
+  <label for="search">Search</label>
+  <input type="search" id="search" name="search" [formControl]="searchControl" (focusout)="submitSubj.next()">
+  <button mat-icon-button type="submit">
+    <mat-icon>search</mat-icon>
+  </button>
+</form>
